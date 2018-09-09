@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHACL Validator</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <style type="text/css">
+    @font-face {
+      font-family: "FontAwesome";
+      font-weight: normal;
+      font-style : normal;
+             src : url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.eot?v=4.7.0");
+             src : url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.eot?#iefix&v=4.7.0") format("embedded-opentype"),
+                   url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.woff2?v=4.7.0") format("woff2"),
+                   url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.woff?v=4.7.0") format("woff"),
+                   url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.ttf?v=4.7.0") format("truetype"),
+                   url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.svg?v=4.7.0#fontawesomeregular") format("svg");
+    }
+  </style>
+  <style type="text/css">
+      textarea#target_graph_input_textarea {
+          width: 100%;
+          height: 500px;
+      }
+      textarea#shacl_graph_input_textarea {
+          width: 100%;
+          height: 500px;
+      }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" integrity="sha256-NuCn4IvuZXdBaFKJOAcsU2Q3ZpwbdFisd5dux4jkQ5w=" crossorigin="anonymous" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.17/vue.js"></script>
+</head>
+<body>
+  <div id="loading-placeholder" style="visibility: visible">
+    <h1>Loading SHACL validator utility.</h1>
+  </div>
+  <div id="app" style="visibility: hidden">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <h1><img src="./static/CSIRO_Logo.svg" alt="CSIRO Logo" />&nbsp;SHACL Online Validator Tool</h1>
+          <form v-on:submit.prevent="catch_form_submit" method="post" action="./validate">
+            <h3>Choose a submission option for your target graph.&nbsp;<a v-on:click="show_target_source_help"><i class="fa fa-question-circle"></i></a></h3>
+            <p v-if="showing_target_source_help"><a v-on:click="show_target_source_help"><i class="fa fa-times-circle"></i></a>&nbsp;HELP<br />
+                Help Line 2
+            </p>
+            <input type="radio" id="target_graph_textarea" value="textarea" v-model="targetGraphType">
+            <label for="target_graph_textarea">Type/Paste RDF text in area below</label>
+            <br>
+            <input type="radio" id="target_graph_link" value="link" v-model="targetGraphType">
+            <label for="target_graph_link">Pull from web URL</label>
+            <br>
+            <input type="radio" id="target_graph_file" value="file" v-model="targetGraphType">
+            <label for="target_graph_file">Upload an RDF File (turtle, n-triples, json-ld, or RDF+XML)</label>
+            <br>
+            <br>
+            <label for="target_graph_input_textarea">Type or paste the RDF Text for your <em>Target</em> graph here (turtle, n-triples, json-ld, or RDF+XML)</label>
+            <textarea v-if="targetGraphType === 'textarea'" id="target_graph_input_textarea" name="target_graph_input_textarea"></textarea>
+            <br/>
+            <hr/>
+            <h3>Choose a submission option for your SHACL graph.&nbsp;<a v-on:click="show_shacl_source_help"><i class="fa fa-question-circle"></i></a></h3>
+            <p v-if="showing_shacl_source_help"><a v-on:click="show_shacl_source_help"><i class="fa fa-times-circle"></i></a>&nbsp;HELP<br />
+                Help Line 2
+            </p>
+            <input type="radio" id="shacl_graph_textarea" value="textarea" v-model="shaclGraphType">
+            <label for="shacl_graph_textarea">Type/Paste RDF text in area below</label>
+            <br>
+            <input type="radio" id="shacl_graph_link" value="link" v-model="shaclGraphType">
+            <label for="shacl_graph_link">Pull from web URL</label>
+            <br>
+            <input type="radio" id="shacl_graph_file" value="file" v-model="shaclGraphType">
+            <label for="shacl_graph_file">Upload an RDF File (turtle, n-triples, json-ld, or RDF+XML)</label>
+            <br>
+            <input type="radio" id="shacl_graph_none" value="none" v-model="shaclGraphType">
+            <label for="shacl_graph_file">My Target graph includes the SHACL shapes</label>
+            <br>
+            <br>
+            <label for="shacl_graph_input_textarea">Type or paste the RDF Text for your <em>SHACL</em> graph here (turtle, n-triples, json-ld, or RDF+XML)</label>
+            <textarea v-if="shaclGraphType === 'textarea'" id="shacl_graph_input_textarea" name="shacl_graph_input_textarea"></textarea>
+            <div class="form-group"><button type="submit" class="btn btn-primary">Validate</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        targetGraphType: "textarea",
+        targetGraphTextArea: "",
+        targetGraphLink: "",
+        targetGraphUploadFile: "",
+        shaclGraphType: "textarea",
+        shaclGraphTextArea: "",
+        shaclGraphLink: "",
+        shaclGraphUploadFile: "",
+        showing_shacl_source_help: false,
+        showing_target_source_help: false,
+      },
+      methods: {
+          show_shacl_source_help: function () {
+            this.showing_shacl_source_help = !this.showing_shacl_source_help;
+          },
+          show_target_source_help: function () {
+            this.showing_target_source_help = !this.showing_target_source_help;
+          },
+          catch_form_submit: function () {
+
+          }
+      },
+      mounted: function() {
+          document.getElementById("loading-placeholder").style.display = 'none';
+          this.$el.style.visibility = 'visible';
+      },
+    })
+  </script>
+</body>
+</html>
