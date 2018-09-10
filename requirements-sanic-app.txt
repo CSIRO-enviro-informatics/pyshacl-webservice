@@ -1,3 +1,5 @@
+# To install:
+#$ pip3 install --upgrade --process-dependency-links -r ./requirements-sanic-app.txt
 sanic>=0.8.1
 sanic-cors>=0.9.5
 aiohttp>=2.3.0,<=3.2.1

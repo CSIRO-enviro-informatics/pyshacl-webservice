@@ -1,4 +1,5 @@
 # encoding: utf-8
+import sys
 try:
     try:
         import packaging # direct use
@@ -12,5 +13,11 @@ try:
     version = packaging.version
 except ImportError:
     raise RuntimeError("The 'packaging' library is missing.")
+
+if sys.version_info[0:3] > (3, 5, 0):
+    async def add_success_callback(fut, callback):
+        result = await fut
+        await callback(result)
+        return result
 
 __all__ = ['version']

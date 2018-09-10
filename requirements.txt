@@ -1,2 +1,5 @@
-# install with `pip3 install --process-dependency-links "git+https://github.com/RDFLib/pySHACL.git@master#egg=pyshacl"`
+# To install:
+#$ pip3 install --upgrade --process-dependency-links -r ./requirements.txt
+# or
+#$ pip3 install --upgrade --process-dependency-links "git+https://github.com/RDFLib/pySHACL.git@master#egg=pyshacl"
 git+https://github.com/RDFLib/pySHACL.git@master#egg=pyshacl
