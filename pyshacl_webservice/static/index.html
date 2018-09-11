@@ -37,6 +37,9 @@
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" integrity="sha256-NuCn4IvuZXdBaFKJOAcsU2Q3ZpwbdFisd5dux4jkQ5w=" crossorigin="anonymous" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.17/vue.js"></script>
+  <template id="report-result">
+    <div class="alert alert-warning" role="alert"><h4>Validation Result</h4><div v-html="result"></div></div>
+  </template>
 </head>
 <body>
   <div id="loading-placeholder" style="visibility: visible">
@@ -141,7 +144,17 @@
             <hr/>
             <div class="form-group"><button type="submit" class="btn btn-primary">Validate</button></div>
           </form>
-          <div class="result-section" v-if="showingResults" v-html="resultsHTML">
+          <div class="result-section" v-if="showingResults">
+            <h3>Validation Report:</h3>
+            <div v-if="reportConforms === true" class="alert alert-success" role="alert">
+              <strong>Conforms:</strong> True
+            </div>
+            <div v-if="reportConforms === false" class="alert alert-danger" role="alert">
+              <strong>Conforms:</strong> False
+            </div>
+            <p v-for="result in reportResults">
+              <report-result v-bind:result="result"></report-result>
+            </p>
           </div>
         </div>
       </div>
@@ -156,18 +169,23 @@
     function SHACL_NS(ending) {
       return "http://www.w3.org/ns/shacl#"+ending;
     }
+    function objectSize(obj) {
+      var size = 0, key;
+      for (key in obj) {
+          if (obj.hasOwnProperty(key)) { size++; }
+      }
+      return size;
+    }
     function triple_search_by_s_p(triple_data, subject, predicate, first){
         var found_triples = [];
         for (var i=0,l=triple_data.length; i<l; i++) {
           var entry = triple_data[i];
-          var entryKeys = Object.keys(entry);
           var entryId = entry['@id'];
           if (!entryId) { continue; }
           if (subject && subject !== entryId) {
               continue;
           }
-          for (var j=0,l2=entryKeys.length; j<l2; j++) {
-              var eKey = entryKeys[j];
+          for (var eKey in entry) {
               if (!entry.hasOwnProperty(eKey)) { continue; }
               if (predicate && predicate !== eKey) { continue; }
               var object = entry[eKey];
@@ -184,11 +202,9 @@
         var found_triples = [];
         for (var i=0,l=triple_data.length; i<l; i++) {
           var entry = triple_data[i];
-          var entryKeys = Object.keys(entry);
           var entryId = entry['@id'];
           if (!entryId) { continue; }
-          for (var j=0,l2=entryKeys.length; j<l2; j++) {
-              var eKey = entryKeys[j];
+          for (var eKey in entry) {
               if (!entry.hasOwnProperty(eKey)) { continue; }
               if (predicate && predicate !== eKey) { continue; }
               var val = entry[eKey];
@@ -213,12 +229,62 @@
     function  triple_first_by_p_o(triple_data, predicate, object) {
       return triple_search_by_p_o(triple_data, predicate, object, true);
     }
-    function validation_report_to_string(triple_data, report) {
-      var reportId = report['@id'];
-      var reportEntry = triple_search_by_s_p(triple_data, reportId, null, false);
-      console.debug(reportEntry);
-      return "<strong>Report<\/strong>&nbsp;"+reportId+"\n"
+    function getObjectVal(objectList) {
+      var ob;
+      if (!Array.isArray(objectList)) {
+          ob = objectList;
+      } else {
+          ob = objectList[0];
+      }
+      if (typeof ob === "string") {
+          return ob;
+      }
+      if (ob.hasOwnProperty('@value')) {
+          return ob['@value'];
+      }
+      var obLength = objectSize(ob);
+      if (obLength === 1 && ob.hasOwnProperty('@id')) {
+          return ob['@id'];
+      }
+      return ob;
     }
+
+    function validationResultToString(triple_data, result) {
+      var resultId = result['@id'];
+      var resultTriples = triple_search_by_s_p(triple_data, resultId, null, false);
+      console.debug(resultTriples);
+      var resultString = "";
+      for (var i=0, l=resultTriples.length; i<l; i++) {
+          var resultTriple = resultTriples[i];
+          var s = resultTriple[0], p = resultTriple[1], o = getObjectVal(resultTriple[2]);
+          if (typeof o === "string" && o.substr(0,2) === "_:") {
+            o = "Unidentifiable embedded blank node."
+          }
+          if (p === SHACL_NS('focusNode')) {
+              resultString += "<strong>Focus Node</strong>:&nbsp;"+o+"\n";
+          } else if (p === SHACL_NS('resultPath')) {
+              resultString += "<strong>Result Path</strong>:&nbsp;"+o+"\n";
+          } else if (p === SHACL_NS('resultSeverity')) {
+              resultString += "<strong>Result Severity</strong>:&nbsp;"+o+"\n";
+          } else if (p === SHACL_NS('sourceConstraintComponent')) {
+              resultString += "<strong>Source Constraint Component</strong>:&nbsp;"+o+"\n";
+          } else if (p === SHACL_NS('sourceShape')) {
+              resultString += "<strong>Source Shape</strong>:&nbsp;"+o+"\n";
+          } else if (p === SHACL_NS('value')) {
+              resultString += "<strong>Value</strong>:&nbsp;"+o+"\n";
+          } else if (p === SHACL_NS('resultMessage')) {
+              resultString += "<strong>Message</strong>:&nbsp;"+o+"\n";
+          }
+      }
+      resultString = resultString.replace(/\n/gi,"<br\/>");
+      return resultString;
+    }
+    var ValidationReportResultComponent = Vue.extend({
+      props: ['result'],
+      template: '#report-result'
+    });
+
+    Vue.component('report-result', ValidationReportResultComponent);
 
     function createApp($) {
         var app = new Vue({
@@ -238,6 +304,8 @@
                 showingShaclSourceHelp: false,
                 showingTargetSourceHelp: false,
                 showingResults: false,
+                reportConforms: null,
+                reportResults: [],
                 resultsHTML: ''
             },
             methods: {
@@ -320,27 +388,27 @@
                   var reportConforms = triple_first_by_s_p(g, reportGraphId, SHACL_NS('conforms'));
                   var reportConformsObj = reportConforms[2];
                   if (Array.isArray(reportConformsObj)) { reportConformsObj = reportConformsObj[0] }
-                  var reports = [];
+                  var results = [];
                   var reportConformsVal = reportConformsObj['@value'];
+                  this.reportConforms = reportConformsVal;
                   var reportSearchResultEntries = triple_search_by_s_p(g, reportGraphId, SHACL_NS('result'));
                   for (var ri=0,l=reportSearchResultEntries.length; ri<l; ri++) {
                       var reportSearchResultEntry = reportSearchResultEntries[ri];
                       var reportSearchResult = reportSearchResultEntry[2];
                       if (Array.isArray(reportSearchResult)) {
-                        Array.prototype.push.apply(reports, reportSearchResult);
+                        Array.prototype.push.apply(results, reportSearchResult);
                       } else {
-                        reports.push(reportSearchResult);
+                        results.push(reportSearchResult);
                       }
                   }
                   console.debug(reportGraphId);
                   console.debug(reportConformsVal);
-                  console.debug(reports);
-                  var resultString = "<h3>Validation Report:<\/h3><strong>Conforms:<\/strong> "+reportConformsVal+"\n";
-                  for (var rj=0,l2=reports.length; rj<l2; rj++) {
-                      var reportString = validation_report_to_string(g, reports[rj]);
-                      resultString += reportString;
+                  console.debug(results);
+                  this.reportResults.length = 0;
+                  for (var rj=0,l2=results.length; rj<l2; rj++) {
+                      var resultString = validationResultToString(g, results[rj]);
+                      this.reportResults.push(resultString);
                   }
-                  this.resultsHTML = resultString.replace(/\n/gi,"<br\/>");
                   this.showingResults = true;
                 },
             },
