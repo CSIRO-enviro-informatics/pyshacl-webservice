@@ -1,0 +1,40 @@
+{% extends "template_layout.html" %}
+
+{% block content %}
+
+    <h1>About</h1>
+    <p>
+        This web application is a form that lets you use <a href="https://github.com/RDFLib/pySHACL">pySHACL</a>, a
+        Python implementation of the <a href="https://www.w3.org/TR/shacl/">Shapes Constraint Language (SHACL)</a>
+        standard to validate RDF data.
+    </p>
+    <p>
+        SHACL requires that validation constraints (cardinality, dependence, particular values etc.) are themselves
+        expressed in the form of an RDF graph called a 'shapes graph'.
+    </p>
+    <p>
+        This web form expects a data graph to validate and a shapes graph to validate with (they may be the same file),
+        both of which it then submits to pySHACL running as a Python module behind the scenes with validation results
+        displayed to the user.
+    </p>
+    <p>
+        SHACL defines the format of a validation process, see the SHACL standard's
+        <a href="https://www.w3.org/TR/shacl/#validation-report">Validation Report Section</a>.
+    </p>
+
+    <h2>Contact Information</h2>
+    <p>
+        This tool is provided by the authors of pySHACL, see <a href="https://github.com/RDFLib/pySHACL#contacts">its
+        contact info</a> to get in touch!
+    </p>
+
+    <h2>Source Code</h2>
+    <p>Like pySHACL, this too is, itself, open source:</p>
+    <ul>
+        <li><a href="https://github.com/CSIRO-enviro-informatics/pyshacl-webservice">This tool on GitHub</a></li>
+    </ul>
+
+{% endblock %}
+
+
+These conditions are provided as shapes and other constructs

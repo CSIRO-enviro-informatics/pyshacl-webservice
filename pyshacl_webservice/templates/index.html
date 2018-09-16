@@ -1,0 +1,399 @@
+{% extends "template_layout.html" %}
+
+{% block content %}
+
+    <template id="report-result">
+        <div class="alert alert-warning" role="alert"><h4>Validation Result</h4><div v-html="result"></div></div>
+    </template>
+
+    <div id="loading-placeholder" style="visibility: visible;">
+        <h1>Loading SHACL validator utility...</h1>
+    </div>
+
+    <div id="app" style="visibility: hidden">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <h1>SHACL Online Validator Tool</h1>
+                <p>
+                    This is a web form that uses <a href="https://github.com/RDFLib/pySHACL">pySHACL</a>, a Python implementation of
+                    the <a href="https://www.w3.org/TR/shacl/">Shapes Constraint Language (SHACL)</a> standard to validate RDF
+                    data graphs according to a 'shapes graph'.
+                </p>
+                <p>
+                    More information is available on the <a href="{{ url_for('about') }}">About</a> page.
+                </p>
+              <form v-on:submit.stop.prevent="catchFormSubmit" method="post" action="./validate">
+                <h3>Choose a submission option for your target graph.&nbsp;<a v-on:click="showTargetSourceHelp"><i class="fa fa-question-circle cursor_pointer"></i></a></h3>
+                <p v-if="showingTargetSourceHelp"><a v-on:click="showTargetSourceHelp"><i class="fa fa-times-circle cursor_pointer"></i></a>&nbsp;HELP<br />
+                    Help Line 2
+                </p>
+                <input type="radio" id="target_graph_textarea" value="text" v-model="targetGraphSource">
+                <label for="target_graph_textarea">Type/Paste RDF text in area below</label>
+                <br>
+                <input type="radio" id="target_graph_link" value="link" v-model="targetGraphSource">
+                <label for="target_graph_link">Pull from web URL</label>
+                <br>
+                <input type="radio" id="target_graph_file" value="file" v-model="targetGraphSource">
+                <label for="target_graph_file">Upload an RDF File (turtle, n-triples, json-ld, or RDF+XML)</label>
+                <br>
+                <br>
+                <div class="form-group" v-if="targetGraphSource === 'text'">
+                  <label for="target_graph_input_textarea">Type or paste the RDF Text for your <em>Target</em> graph here (turtle, n-triples, json-ld, or RDF+XML)</label>
+                  <textarea class="form-control" id="target_graph_input_textarea" v-model="targetGraphTextArea"></textarea>
+                </div>
+                <div class="form-group" v-if="targetGraphSource === 'link'">
+                  <label for="target_graph_input_link">URL to Target RDF File:&nbsp;</label>
+                  <input class="form-control" type="text" placeholder="http://..." id="target_graph_input_link" v-model="targetGraphLink">
+                </div>
+                <div class="form-group" v-if="targetGraphSource === 'file'">
+                  <label for="target_graph_input_file">Upload an RDF File:&nbsp;</label>
+                  <input class="form-control" type="file" id="target_graph_input_file" v-on:change="targetGraphFileChanged">
+                </div>
+                <div class="form-group">
+                  <label for="target_graph_input_format">Select Target Graph RDF Format&nbsp;</label>
+                  <select class="form-control" id="target_graph_input_format" v-model="targetGraphFormat">
+                    <option value="turtle">turtle: .ttl text/turtle</option>
+                    <option value="nt">n-triples: .nt text/plain</option>
+                    <option value="xml">rdf+xml: .xml application/rdf+xml</option>
+                    <option value="json-ld">json-ld: .json application/ld+json</option>
+                  </select>
+                </div>
+                <br/>
+                <hr/>
+                <h4>Choose a submission option for your SHACL graph.&nbsp;<a v-on:click="showShaclSourceHelp"><i class="fa fa-question-circle cursor_pointer"></i></a></h4>
+                <p v-if="showingShaclSourceHelp"><a v-on:click="showShaclSourceHelp"><i class="fa fa-times-circle cursor_pointer"></i></a>&nbsp;HELP<br />
+                    Help Line 2
+                </p>
+                <input type="radio" id="shacl_graph_textarea" value="text" v-model="shaclGraphSource">
+                <label for="shacl_graph_textarea">Type/Paste RDF text in area below</label>
+                <br>
+                <input type="radio" id="shacl_graph_link" value="link" v-model="shaclGraphSource">
+                <label for="shacl_graph_link">Pull from web URL</label>
+                <br>
+                <input type="radio" id="shacl_graph_file" value="file" v-model="shaclGraphSource">
+                <label for="shacl_graph_file">Upload an RDF File (turtle, n-triples, json-ld, or RDF+XML)</label>
+                <br>
+                <input type="radio" id="shacl_graph_none" value="none" v-model="shaclGraphSource">
+                <label for="shacl_graph_file">My Target graph includes the SHACL shapes</label>
+                <br>
+                <br>
+                <div class="form-group" v-if="shaclGraphSource === 'text'">
+                  <label for="shacl_graph_input_textarea">Type or paste the RDF Text for your <em>SHACL</em> graph here (turtle, n-triples, json-ld, or RDF+XML)</label>
+                  <textarea class="form-control" id="shacl_graph_input_textarea" v-model="shaclGraphTextArea"></textarea>
+                </div>
+                <div class="form-group" v-if="shaclGraphSource === 'link'">
+                  <label for="shacl_graph_input_link">URL to Target RDF File:&nbsp;</label>
+                  <input class="form-control" type="text" placeholder="http://..." id="shacl_graph_input_link" v-model="shaclGraphLink">
+                </div>
+                <div class="form-group" v-if="shaclGraphSource === 'file'">
+                  <label for="shacl_graph_input_file">Upload an RDF File:&nbsp;</label>
+                  <input class="form-control" type="file" id="shacl_graph_input_file" v-on:change="shaclGraphFileChanged">
+                </div>
+                <div class="form-group" v-if="shaclGraphSource !== 'none'">
+                  <label for="shacl_graph_input_format">Select SHACL Graph RDF Format&nbsp;</label>
+                  <select class="form-control" id="shacl_graph_input_format" v-model="shaclGraphFormat">
+                    <option value="turtle">turtle: .ttl text/turtle</option>
+                    <option value="nt">n-triples: .nt text/plain</option>
+                    <option value="xml">rdf+xml: .xml application/rdf+xml</option>
+                    <option value="json-ld">json-ld: .json application/ld+json</option>
+                  </select>
+                </div>
+                <br/>
+                <hr/>
+                <h4>Choose an option for a running pre-validation Graph Inferencing routine</h4>
+                <input type="radio" id="inference_input_none" value="none" v-model="inferenceTargetOption">
+                <label for="inference_input_none">No Inferencing</label>
+                <br>
+                <input type="radio" id="inference_input_rdfs" value="rdfs" v-model="inferenceTargetOption">
+                <label for="inference_input_rdfs">RDFS Only</label>
+                <br>
+                <input type="radio" id="inference_input_owlrl" value="owlrl" v-model="inferenceTargetOption">
+                <label for="inference_input_owlrl">OWL-RL Only</label>
+                <br>
+                <input type="radio" id="inference_input_both" value="both" v-model="inferenceTargetOption">
+                <label for="inference_input_both">RDFS+OWL-RL</label>
+                <br/>
+                <hr/>
+                <div class="form-group"><button type="submit" class="btn btn-primary">Validate</button></div>
+              </form>
+              <div class="result-section" v-if="showingResults">
+                <h3>Validation Report:</h3>
+                <div v-if="reportConforms === true" class="alert alert-success" role="alert">
+                  <strong>Conforms:</strong> True
+                </div>
+                <div v-if="reportConforms === false" class="alert alert-danger" role="alert">
+                  <strong>Conforms:</strong> False
+                </div>
+                <p v-for="result in reportResults">
+                  <report-result v-bind:result="result"></report-result>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.17/vue.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js" integrity="sha256-mpnrJ5DpEZZkwkE1ZgkEQQJW/46CSEh/STrZKOB/qoM=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script>
+        function SHACL_NS(ending) {
+          return "http://www.w3.org/ns/shacl#"+ending;
+        }
+        function objectSize(obj) {
+          var size = 0, key;
+          for (key in obj) {
+              if (obj.hasOwnProperty(key)) { size++; }
+          }
+          return size;
+        }
+        function triple_search_by_s_p(triple_data, subject, predicate, first){
+            var found_triples = [];
+            for (var i=0,l=triple_data.length; i<l; i++) {
+              var entry = triple_data[i];
+              var entryId = entry['@id'];
+              if (!entryId) { continue; }
+              if (subject && subject !== entryId) {
+                  continue;
+              }
+              for (var eKey in entry) {
+                  if (!entry.hasOwnProperty(eKey)) { continue; }
+                  if (predicate && predicate !== eKey) { continue; }
+                  var object = entry[eKey];
+                  if (!Array.isArray(object)) {
+                      object = [object];
+                  }
+                  found_triples.push([entryId, eKey, object]);
+                  if (first) { return found_triples[0]; }
+              }
+              return found_triples;
+            }
+        }
+        function triple_search_by_p_o(triple_data, predicate, object, first){
+            var found_triples = [];
+            for (var i=0,l=triple_data.length; i<l; i++) {
+              var entry = triple_data[i];
+              var entryId = entry['@id'];
+              if (!entryId) { continue; }
+              for (var eKey in entry) {
+                  if (!entry.hasOwnProperty(eKey)) { continue; }
+                  if (predicate && predicate !== eKey) { continue; }
+                  var val = entry[eKey];
+                  if (!Array.isArray(val)) {
+                      val = [val];
+                  }
+                  for (var k=0,l3=val.length; k<l3; k++) {
+                      var valueObj = val[k];
+                      if (object && valueObj === object) {
+                          found_triples.push([entryId, eKey, val]);
+                          if (first) { return found_triples[0]; }
+                          break;
+                      }
+                  }
+              }
+              return found_triples;
+            }
+        }
+        function triple_first_by_s_p(triple_data, subject, predicate) {
+          return triple_search_by_s_p(triple_data, subject, predicate, true);
+        }
+        function triple_first_by_p_o(triple_data, predicate, object) {
+          return triple_search_by_p_o(triple_data, predicate, object, true);
+        }
+        function getObjectVal(objectList) {
+          var ob;
+          if (!Array.isArray(objectList)) {
+              ob = objectList;
+          } else {
+              ob = objectList[0];
+          }
+          if (typeof ob === "string") {
+              return ob;
+          }
+          if (ob.hasOwnProperty('@value')) {
+              return ob['@value'];
+          }
+          var obLength = objectSize(ob);
+          if (obLength === 1 && ob.hasOwnProperty('@id')) {
+              return ob['@id'];
+          }
+          return ob;
+        }
+        function validationResultToString(triple_data, result) {
+          var resultId = result['@id'];
+          var resultTriples = triple_search_by_s_p(triple_data, resultId, null, false);
+          console.debug(resultTriples);
+          var resultString = "";
+          for (var i=0, l=resultTriples.length; i<l; i++) {
+              var resultTriple = resultTriples[i];
+              var s = resultTriple[0], p = resultTriple[1], o = getObjectVal(resultTriple[2]);
+              if (typeof o === "string" && o.substr(0,2) === "_:") {
+                o = "Unidentifiable embedded blank node."
+              }
+              if (p === SHACL_NS('focusNode')) {
+                  resultString += "<strong>Focus Node</strong>:&nbsp;"+o+"\n";
+              } else if (p === SHACL_NS('resultPath')) {
+                  resultString += "<strong>Result Path</strong>:&nbsp;"+o+"\n";
+              } else if (p === SHACL_NS('resultSeverity')) {
+                  resultString += "<strong>Result Severity</strong>:&nbsp;"+o+"\n";
+              } else if (p === SHACL_NS('sourceConstraintComponent')) {
+                  resultString += "<strong>Source Constraint Component</strong>:&nbsp;"+o+"\n";
+              } else if (p === SHACL_NS('sourceShape')) {
+                  resultString += "<strong>Source Shape</strong>:&nbsp;"+o+"\n";
+              } else if (p === SHACL_NS('value')) {
+                  resultString += "<strong>Value</strong>:&nbsp;"+o+"\n";
+              } else if (p === SHACL_NS('resultMessage')) {
+                  resultString += "<strong>Message</strong>:&nbsp;"+o+"\n";
+              }
+          }
+          resultString = resultString.replace(/\n/gi,"<br\/>");
+          return resultString;
+        }
+        var ValidationReportResultComponent = Vue.extend({
+          props: ['result'],
+          template: '#report-result'
+        });
+
+        Vue.component('report-result', ValidationReportResultComponent);
+
+        function createApp($) {
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    targetGraphSource: "text",
+                    targetGraphFormat: "turtle",
+                    targetGraphTextArea: "",
+                    targetGraphLink: "",
+                    targetGraphUploadFile: "",
+                    shaclGraphSource: "text",
+                    shaclGraphFormat: "turtle",
+                    shaclGraphTextArea: "",
+                    shaclGraphLink: "",
+                    shaclGraphUploadFile: "",
+                    inferenceTargetOption: "none",
+                    showingShaclSourceHelp: false,
+                    showingTargetSourceHelp: false,
+                    showingResults: false,
+                    reportConforms: null,
+                    reportResults: [],
+                    resultsHTML: ''
+                },
+                methods: {
+                    showShaclSourceHelp: function () {
+                        this.showingShaclSourceHelp = !this.showingShaclSourceHelp;
+                    },
+                    showTargetSourceHelp: function () {
+                        this.showingTargetSourceHelp = !this.showingTargetSourceHelp;
+                    },
+                    targetGraphFileChanged: function(ev) {
+                        var files = ev.target.files;
+                        if (files.length > 0) {
+                            this.targetGraphUploadFile = files[0];
+                        } else {
+                            this.targetGraphUploadFile = null;
+                        }
+                        console.debug(ev);
+                    },
+                    shaclGraphFileChanged: function(ev) {
+                        var files = ev.target.files;
+                        if (files.length > 0) {
+                            this.shaclGraphUploadFile = files[0];
+                        } else {
+                            this.shaclGraphUploadFile = null;
+                        }
+                        console.debug(ev);
+                    },
+                    catchFormSubmit: function (ev) {
+                        /* Don't need preventDefault() here, because v-on:submit.prevent in the
+                           template does that for us automatically.
+                         */
+                        var $form = $(ev.target).first();
+                        var targetEndpoint = $form.attr('action');
+                        var payload = new FormData();
+                        if (this.targetGraphSource === 'text') {
+                            payload.set('targetData', this.targetGraphTextArea);
+                        } else if (this.targetGraphSource === 'link') {
+                            payload.set('targetData', this.targetGraphLink);
+                        } else if (this.targetGraphSource === 'file') {
+                            payload.set('targetData', this.targetGraphUploadFile);
+                        } else {
+                            alert("Please select a Target Graph Source type.");
+                            return;
+                        }
+                        if ((!this.shaclGraphSource) || (this.shaclGraphSource === 'none')) {
+                            payload.set('shaclData', null);
+                        } else if (this.shaclGraphSource === 'text') {
+                            payload.set('shaclData', this.shaclGraphTextArea);
+                        } else if (this.shaclGraphSource === 'link') {
+                            payload.set('shaclData', this.shaclGraphLink);
+                        } else if (this.shaclGraphSource === 'file') {
+                            payload.set('shaclData', this.shaclGraphUploadFile);
+                        } else {
+                            alert("Please select a SHACL Graph Source type.");
+                            return;
+                        }
+                        payload.set('targetGraphSource', this.targetGraphSource);
+                        payload.set('shaclGraphSource', this.shaclGraphSource);
+                        payload.set('targetGraphFormat', this.targetGraphFormat);
+                        payload.set('shaclGraphFormat', this.shaclGraphFormat);
+                        payload.set('inferenceTargetOption', this.inferenceTargetOption);
+                        var self = this;
+                        axios({
+                          method: 'post',
+                          url: targetEndpoint,
+                          data: payload,
+                          responseType: 'json',
+                          responseEncoding: 'utf-8',
+                        }).then(function(r) {
+                          self.buildResult(r.data);
+                        }).catch(function(b) {
+                          console.error(b);
+                        });
+                    },
+
+                    buildResult: function (resultData) {
+                      var g = resultData;
+                      var reportGraphTriple = triple_first_by_p_o(g, '@type', SHACL_NS('ValidationReport'));
+                      var reportGraphId = reportGraphTriple[0];
+                      var reportConforms = triple_first_by_s_p(g, reportGraphId, SHACL_NS('conforms'));
+                      var reportConformsObj = reportConforms[2];
+                      if (Array.isArray(reportConformsObj)) { reportConformsObj = reportConformsObj[0] }
+                      var results = [];
+                      var reportConformsVal = reportConformsObj['@value'];
+                      this.reportConforms = reportConformsVal;
+                      var reportSearchResultEntries = triple_search_by_s_p(g, reportGraphId, SHACL_NS('result'));
+                      for (var ri=0,l=reportSearchResultEntries.length; ri<l; ri++) {
+                          var reportSearchResultEntry = reportSearchResultEntries[ri];
+                          var reportSearchResult = reportSearchResultEntry[2];
+                          if (Array.isArray(reportSearchResult)) {
+                            Array.prototype.push.apply(results, reportSearchResult);
+                          } else {
+                            results.push(reportSearchResult);
+                          }
+                      }
+                      console.debug(reportGraphId);
+                      console.debug(reportConformsVal);
+                      console.debug(results);
+                      this.reportResults.length = 0;
+                      for (var rj=0,l2=results.length; rj<l2; rj++) {
+                          var resultString = validationResultToString(g, results[rj]);
+                          this.reportResults.push(resultString);
+                      }
+                      this.showingResults = true;
+                    },
+                },
+                mounted: function () {
+                    $("#loading-placeholder").css('display', 'none');
+                    $(this.$el).css('visibility', 'visible');
+                },
+            })
+        }
+        (function($){$(document).ready(function(){
+          createApp($);
+
+        })})(window.jQuery);
+    </script>
+{% endblock %}

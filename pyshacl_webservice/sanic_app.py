@@ -25,7 +25,6 @@ from pyshacl_webservice.util import add_success_callback
 from pyshacl_webservice import functions
 
 
-
 app = Sanic(__name__)
 app.config.LOGO = "PYSHACL WebService - Sanic App"
 spf = SanicPluginsFramework(app)
@@ -34,6 +33,7 @@ cors, _regd = spf.register_plugin(cors, automatic_options=True)
 
 class InvalidURLException(SanicException):
     pass
+
 
 _index_html_file = path.join(CONFIG['STATIC_DIR'], 'index.html')
 app.static('/', _index_html_file, name='index')
@@ -48,6 +48,7 @@ def exception1(request, exception):
     return HTTPResponse("Provided URL is invalid. The target is in the wrong format, "
                         "or does not exist.\r\n{}".format(message),
                         status=status or 406, content_type='text/plain')
+
 
 @app.route('/validate', methods={'POST'})
 async def validate(request):

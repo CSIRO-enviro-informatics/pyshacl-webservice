@@ -11,7 +11,7 @@ except (ImportError, AssertionError) as e:
     logging.error(str(e))
     raise RuntimeError(
         "Please install `flask` to use Flask app functionality.")
-from flask import Flask, Response, request
+from flask import Flask, Response, request, render_template
 from werkzeug.exceptions import HTTPException
 from flask_cors import CORS
 from requests import Session
@@ -23,8 +23,10 @@ from pyshacl_webservice import functions
 app = Flask(__name__, static_folder=CONFIG['STATIC_DIR'])
 cors = CORS(app)
 
+
 class InvalidURLException(HTTPException):
     pass
+
 
 @app.errorhandler(InvalidURLException)
 def exception1(exception):
@@ -34,9 +36,20 @@ def exception1(exception):
                     "or does not exist.\r\n{}".format(message),
                     status=status or 406, content_type='text/plain')
 
-@app.route('/', methods={'GET'})
+
+@app.route('/')
 def index():
-    return app.send_static_file('index.html')
+    return render_template(
+        'index.html'
+    )
+
+
+@app.route('/about',)
+def about():
+    return render_template(
+        'about.html'
+    )
+
 
 @app.route('/validate', methods={'POST'})
 def validate():
