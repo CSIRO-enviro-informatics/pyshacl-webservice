@@ -40,14 +40,16 @@ def exception1(exception):
 @app.route('/')
 def index():
     return render_template(
-        'index.html'
+        'index.html',
+        headers={'Access-Control-Allow-Origin': 'http://www.csiro.au/'}
     )
 
 
 @app.route('/about',)
 def about():
     return render_template(
-        'about.html'
+        'about.html',
+        headers={'Access-Control-Allow-Origin': 'http://www.csiro.au/'}
     )
 
 

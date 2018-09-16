@@ -2,7 +2,7 @@
   font-family: "UnitRoundedBlack";
   font-style: normal;
   font-weight: normal;
-  src: url("http://www.csiro.au/themes/default/font/UnitRoundedWeb-Black.woff") format("woff");
+  src: url('/static/UnitRoundedWeb-Black.woff') format("woff");
 }
 
 body {
