@@ -1,0 +1,34 @@
+textarea#target_graph_input_textarea {
+    width: 100%;
+    height: 500px;
+}
+textarea#shacl_graph_input_textarea {
+    width: 100%;
+    height: 500px;
+}
+img#logo-image {
+    height: 1.6em;
+    vertical-align: text-bottom;
+}
+i.cursor_pointer {
+    cursor: pointer;
+}
+
+div.alert {
+	border: 1px solid grey;
+	border-radius: 5px;
+	padding: 10px;
+}
+
+div.alert.alert-warning {
+    background-color: #ffffb1;
+}
+div.alert.alert-danger {
+    background-color: #ffacac;
+}
+div.alert.alert-info {
+    background-color: #acebff;
+}
+div.alert.alert-success {
+    background-color: #bdffac;
+}

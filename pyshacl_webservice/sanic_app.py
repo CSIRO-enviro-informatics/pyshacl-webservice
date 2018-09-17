@@ -11,7 +11,6 @@ except (ImportError, AssertionError) as e:
     logging.error(str(e))
     raise RuntimeError(
         "Please install `sanic` to use Sanic app functionality.")
-from os import path
 import asyncio
 from aiohttp import ClientSession
 from sanic import Sanic
@@ -19,27 +18,25 @@ from sanic.response import HTTPResponse
 from sanic.request import Request
 from sanic.exceptions import SanicException
 from sanic_cors.extension import cors
+from sanic_jinja2 import SanicJinja2
 from spf import SanicPluginsFramework
 from pyshacl_webservice.config import CONFIG
 from pyshacl_webservice.util import add_success_callback
 from pyshacl_webservice import functions
 
 
-
 app = Sanic(__name__)
 app.config.LOGO = "PYSHACL WebService - Sanic App"
 spf = SanicPluginsFramework(app)
 cors, _regd = spf.register_plugin(cors, automatic_options=True)
+jinja = SanicJinja2(app)
 
 
 class InvalidURLException(SanicException):
     pass
 
-_index_html_file = path.join(CONFIG['STATIC_DIR'], 'index.html')
-app.static('/', _index_html_file, name='index')
 
 app.static('/static', CONFIG['STATIC_DIR'], name='static')
-
 
 @app.exception(InvalidURLException)
 def exception1(request, exception):
@@ -48,6 +45,21 @@ def exception1(request, exception):
     return HTTPResponse("Provided URL is invalid. The target is in the wrong format, "
                         "or does not exist.\r\n{}".format(message),
                         status=status or 406, content_type='text/plain')
+
+
+@app.route('/about')
+def about(request):
+    resp = jinja.render('about.html', request)
+    resp.headers.add('Access-Control-Allow-Origin', 'http://www.csiro.au/')
+    return resp
+
+
+@app.route('/')
+def index(request):
+    resp = jinja.render('index.html', request)
+    resp.headers.add('Access-Control-Allow-Origin', 'http://www.csiro.au/')
+    return resp
+
 
 @app.route('/validate', methods={'POST'})
 async def validate(request):

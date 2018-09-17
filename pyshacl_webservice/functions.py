@@ -12,7 +12,7 @@ def run_validate(target_graph_text, target_graph_format=None,
                  target_graph_format=target_graph_format,
                  shacl_graph_format=shacl_graph_format,
                  serialize_report_graph='json-ld')
-    conforms, output = r
+    conforms, output, text = r
     if load_json:
         output = json.loads(output, encoding='utf-8')
     return conforms, output

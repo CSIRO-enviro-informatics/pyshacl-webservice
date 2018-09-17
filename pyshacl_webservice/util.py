@@ -2,7 +2,7 @@
 import sys
 try:
     try:
-        import packaging # direct use
+        import packaging  # direct use
     except ImportError:
         # v39.0 and above.
         try:

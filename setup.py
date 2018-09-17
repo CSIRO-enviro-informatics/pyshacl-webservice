@@ -47,7 +47,7 @@ setup(
     author='Ashley Sommer',
     author_email='ashley.sommer@csiro.au',
     url='https://github.com/RDFLib/pySHACL/',
-    download_url='https://github.com/RDFLib/pySHACL/'
+    download_url='https://github.com/CSIRO-enviro-informatics/pyshacl-webservice/'
                     'archive/v{:s}.tar.gz'.format(version),
     license='LICENSE',
     keywords=['Linked Data', 'Semantic Web', 'Python',
@@ -68,8 +68,8 @@ setup(
     ],
     project_urls={
         'Bug Reports':
-            'https://github.com/RDFLib/pySHACL/issues',
-        'Source': 'https://github.com/RDFLib/pySHACL/',
+            'https://github.com/CSIRO-enviro-informatics/pyshacl-webservice/issues',
+        'Source': 'https://github.com/CSIRO-enviro-informatics/pyshacl-webservice/',
     },
     install_requires=requirements,
     dependency_links=dependency_links
