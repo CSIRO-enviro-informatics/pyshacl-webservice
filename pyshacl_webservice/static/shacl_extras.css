@@ -13,3 +13,22 @@ img#logo-image {
 i.cursor_pointer {
     cursor: pointer;
 }
+
+div.alert {
+	border: 1px solid grey;
+	border-radius: 5px;
+	padding: 10px;
+}
+
+div.alert.alert-warning {
+    background-color: #ffffb1;
+}
+div.alert.alert-danger {
+    background-color: #ffacac;
+}
+div.alert.alert-info {
+    background-color: #acebff;
+}
+div.alert.alert-success {
+    background-color: #bdffac;
+}

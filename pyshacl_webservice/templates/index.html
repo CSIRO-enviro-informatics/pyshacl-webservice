@@ -125,9 +125,7 @@
                 <div v-if="reportConforms === false" class="alert alert-danger" role="alert">
                   <strong>Conforms:</strong> False
                 </div>
-                <p v-for="result in reportResults">
-                  <report-result v-bind:result="result"></report-result>
-                </p>
+                <report-result v-for="result in reportResults" v-bind:result="result"></report-result>
               </div>
             </div>
           </div>
@@ -393,7 +391,6 @@
         }
         (function($){$(document).ready(function(){
           createApp($);
-
         })})(window.jQuery);
     </script>
 {% endblock %}
