@@ -1,4 +1,4 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 from pyshacl_webservice.util import version
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -63,8 +63,8 @@ def validate():
     """
     form = request.form
     try:
-        target_graph_source = form['targetGraphSource']
-        assert target_graph_source, "targetGraphSource not found in form data."
+        data_graph_source = form['dataGraphSource']
+        assert data_graph_source, "dataGraphSource not found in form data."
     except (AttributeError, KeyError, AssertionError) as e:
         raise e
     try:
@@ -72,38 +72,48 @@ def validate():
     except (AttributeError, KeyError, AssertionError) as e:
         raise e
 
-    assert target_graph_source in {'text', 'file', 'link'}, "Unsupported Target Graph source."
+    assert data_graph_source in {'text', 'file', 'link'}, "Unsupported Data Graph source."
     assert shacl_graph_source in {'text', 'file', 'link', 'none', None}, "Unsupported SHACL Graph source."
 
     try:
-        target_graph_format = form['targetGraphFormat']
-        assert target_graph_format, "targetGraphFormat not found in form data."
+        data_graph_format = form['dataGraphFormat']
+        assert data_graph_format, "dataGraphFormat not found in form data."
     except (AttributeError, KeyError, AssertionError) as e:
         raise e
 
     try:
-        inference_target_option = form['inferenceTargetOption']
-        assert inference_target_option, "inferenceTargetOption not found in form data."
+        inference_data_option = form['inferenceDataOption']
+        assert inference_data_option, "inferenceDataOption not found in form data."
     except (AttributeError, KeyError, AssertionError) as e:
         raise e
-    if target_graph_source == 'file':
+    try:
+        enable_metashacl = form['enableMetashacl']
+    except (AttributeError, KeyError) as e:
+        enable_metashacl = False
+    if enable_metashacl and \
+            (enable_metashacl == "false" or enable_metashacl == "0"):
+        enable_metashacl = False
+    if enable_metashacl and \
+            (enable_metashacl == "true" or enable_metashacl == "1"):
+        enable_metashacl = True
+    if data_graph_source == 'file':
         try:
-            target_data = request.files['targetData']
-            assert target_data
-            target_data = target_data.read()
+            data_source = request.files['dataSource']
+            assert data_source
+            data_source = data_source.read()
         except (AttributeError, KeyError, AssertionError):
-            raise FileNotFoundError('Target Data File not found')
-        if isinstance(target_data, bytes):
+            raise FileNotFoundError('Data Source File not found')
+        if isinstance(data_source, bytes):
             # Assuming UTF-8 here, this might not always be right.
-            target_data = target_data.decode('utf-8')
+            data_source = data_source.decode('utf-8')
     else:
         try:
-            target_data = form['targetData']
-            assert target_data, 'targetData not found in the form data.'
+            data_source = form['dataSource']
+            assert data_source, 'dataSource not found in the form data.'
         except (AttributeError, KeyError, AssertionError) as e:
             raise e
     if (not shacl_graph_source) or shacl_graph_source == 'none':
-        shacl_data = None
+        shacl_source = None
         shacl_graph_format = None
     else:
         try:
@@ -113,48 +123,49 @@ def validate():
             raise e
         if shacl_graph_source == 'file':
             try:
-                shacl_data = request.files['shaclData']
-                assert shacl_data
-                shacl_data = shacl_data.read()
+                shacl_source = request.files['shaclSource']
+                assert shacl_source
+                shacl_source = shacl_source.read()
             except (AttributeError, KeyError, AssertionError):
-                raise FileNotFoundError('SHACL Data File not found')
-            if isinstance(shacl_data, bytes):
+                raise FileNotFoundError('SHACL Source File not found')
+            if isinstance(shacl_source, bytes):
                 # Assuming UTF-8 here, this might not always be right.
-                shacl_data = shacl_data.decode('utf-8')
+                shacl_source = shacl_source.decode('utf-8')
         else:
             try:
-                shacl_data = form['shaclData']
-                assert shacl_data, 'shaclData not found in the form data.'
+                shacl_source = form['shaclSource']
+                assert shacl_source, 'shaclSource not found in the form data.'
             except (AttributeError, KeyError, AssertionError) as e:
                 raise e
     client_session = None
-    if target_graph_source == 'link':
-        assert (target_data[:5].lower() == 'http:' or target_data[:6].lower() == 'https:'),\
-            "The Target Graph source link must start with http: or https:"
+    if data_graph_source == 'link':
+        assert (data_source[:5].lower() == 'http:' or data_source[:6].lower() == 'https:'),\
+            "The Data Graph source link must start with http: or https:"
         client_session = client_session or Session()
         try:
-            response = client_session.get(target_data, headers={'Accept': 'text/turtle'})
+            response = client_session.get(data_source, headers={'Accept': 'text/turtle'})
             if not (200 <= response.status_code < 300):
-                raise InvalidURLException("Target Url got code {}".format(response.status_code), 406)
+                raise InvalidURLException("Data Graph Url got code {}".format(response.status_code), 406)
         except (ConnectionError, ConnectTimeout):
-            raise InvalidURLException("Target URL Not available.", 406)
+            raise InvalidURLException("Data Graph URL Not available.", 406)
         body = response.text
-        target_data = body
+        data_source = body
     if shacl_graph_source == 'link':
-        assert (shacl_data[:5].lower() == 'http:' or shacl_data[:6].lower() == 'https:'),\
+        assert (shacl_source[:5].lower() == 'http:' or shacl_source[:6].lower() == 'https:'),\
             "The SHACL Graph source link must start with http: or https:"
         client_session = client_session or Session()
         try:
-            response = client_session.get(shacl_data, headers={'Accept': 'text/turtle'})
+            response = client_session.get(shacl_source, headers={'Accept': 'text/turtle'})
             if not (200 <= response.status_code < 300):
                 raise InvalidURLException("SHACL Url got code {}".format(response.status_code), 406)
         except (ConnectionError, ConnectTimeout):
             raise InvalidURLException("SHACL URL Not available.", 406)
         body = response.text
-        shacl_data = body
+        shacl_source = body
     try:
-        r = functions.run_validate(target_data, target_graph_format, shacl_data,
-                                   shacl_graph_format, inference_target_option)
+        r = functions.run_validate(data_source, data_graph_format, shacl_source,
+                                   shacl_graph_format, inference_data_option,
+                                   enable_metashacl)
     except Exception as e:
         raise e
     conforms, report = r
