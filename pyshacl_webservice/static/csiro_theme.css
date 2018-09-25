@@ -2,7 +2,7 @@
   font-family: "UnitRoundedBlack";
   font-style: normal;
   font-weight: normal;
-  src: url('/static/UnitRoundedWeb-Black.woff') format("woff");
+  src: url('./UnitRoundedWeb-Black.woff') format("woff");
 }
 
 body {
@@ -16,7 +16,7 @@ body {
 	text-align:left;
 	width:894px;
 	margin-top:20px;
-	background-image: url('/static/wave-graphic.png');
+	background-image: url('./wave-graphic.png');
 	position:relative;
 	height:118px;
 }

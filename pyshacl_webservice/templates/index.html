@@ -181,8 +181,8 @@
                   found_triples.push([entryId, eKey, object]);
                   if (first) { return found_triples[0]; }
               }
-              return found_triples;
             }
+            return found_triples;
         }
         function triple_search_by_p_o(triple_data, predicate, object, first){
             var found_triples = [];
@@ -206,8 +206,8 @@
                       }
                   }
               }
-              return found_triples;
             }
+            return found_triples;
         }
         function triple_first_by_s_p(triple_data, subject, predicate) {
           return triple_search_by_s_p(triple_data, subject, predicate, true);
