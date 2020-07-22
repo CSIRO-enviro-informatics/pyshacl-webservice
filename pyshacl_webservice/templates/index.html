@@ -71,7 +71,7 @@
                 </div>
                 <br/>
                 <hr/>
-                <h4>Choose a submission option for your SHACL graph.&nbsp;<a v-on:click="showShaclSourceHelp"><i class="fa fa-question-circle cursor_pointer"></i></a></h4>
+                <h3>Choose a submission option for your SHACL graph.&nbsp;<a v-on:click="showShaclSourceHelp"><i class="fa fa-question-circle cursor_pointer"></i></a></h3>
                 <p v-if="showingShaclSourceHelp"><a v-on:click="showShaclSourceHelp"><i class="fa fa-times-circle cursor_pointer"></i></a>&nbsp;HELP<br />
                     Help Line 2
                 </p>
@@ -85,7 +85,7 @@
                 <label for="shacl_graph_file">Upload an RDF File (turtle, n-triples, json-ld, or RDF+XML)</label>
                 <br>
                 <input type="radio" id="shacl_graph_none" value="none" v-model="shaclGraphSource">
-                <label for="shacl_graph_file">My Data Graph includes the SHACL shapes</label>
+                <label for="shacl_graph_none">My Data Graph includes the SHACL shapes</label>
                 <br>
                 <br>
                 <div class="form-group" v-if="shaclGraphSource === 'text'">
@@ -112,7 +112,49 @@
                 </div>
                 <br/>
                 <hr/>
-                <h4>Choose an option for a running pre-validation Graph Inferencing routine</h4>
+                <h3>Choose a submission option for an Extra Ontology Graph.&nbsp;<a v-on:click="showExtraSourceHelp"><i class="fa fa-question-circle cursor_pointer"></i></a></h3>
+                <p v-if="showingExtraSourceHelp"><a v-on:click="showExtraSourceHelp"><i class="fa fa-times-circle cursor_pointer"></i></a>&nbsp;HELP<br />
+                    This is useful for when an ontology graph needs to be mixed in to the datagraph before it can be successfully validated.<br/>
+                    This is most helpful when used in conjunction with RDFS or OWL-RL inferencing.
+                </p>
+                <input type="radio" id="extra_graph_none" value="none" v-model="extraGraphSource">
+                <label for="extra_graph_none">Not Required</label>
+                <br>
+                <input type="radio" id="extra_graph_textarea" value="text" v-model="extraGraphSource">
+                <label for="extra_graph_textarea">Type/Paste RDF text in area below</label>
+                <br>
+                <input type="radio" id="extra_graph_link" value="link" v-model="extraGraphSource">
+                <label for="extra_graph_link">Pull from web URL</label>
+                <br>
+                <input type="radio" id="extra_graph_file" value="file" v-model="extraGraphSource">
+                <label for="extra_graph_file">Upload an RDF File (turtle, n-triples, json-ld, or RDF+XML)</label>
+                <br>
+                <br>
+                <div class="form-group" v-if="extraGraphSource === 'text'">
+                  <label for="extra_graph_input_textarea">Type or paste the RDF Text for your <em>Extra Ontology</em> graph here (turtle, n-triples, json-ld, notation3, or RDF+XML)</label>
+                  <textarea class="form-control" id="extra_graph_input_textarea" v-model="extraGraphTextArea"></textarea>
+                </div>
+                <div class="form-group" v-if="extraGraphSource === 'link'">
+                  <label for="extra_graph_input_link">URL to Extra Ontology Graph File:&nbsp;</label>
+                  <input class="form-control" type="text" placeholder="http://..." id="extra_graph_input_link" v-model="extraGraphLink">
+                </div>
+                <div class="form-group" v-if="extraGraphSource === 'file'">
+                  <label for="extra_graph_input_file">Upload an RDF File:&nbsp;</label>
+                  <input class="form-control" type="file" id="extra_graph_input_file" v-on:change="extraGraphFileChanged">
+                </div>
+                <div class="form-group" v-if="extraGraphSource !== 'none'">
+                  <label for="extra_graph_input_format">Select Extra Ontology Graph RDF Format&nbsp;</label>
+                  <select class="form-control" id="extra_graph_input_format" v-model="extraGraphFormat">
+                    <option value="turtle">turtle: .ttl text/turtle</option>
+                    <option value="nt">n-triples: .nt text/plain</option>
+                    <option value="xml">rdf+xml: .xml application/rdf+xml</option>
+                    <option value="json-ld">json-ld: .json application/ld+json</option>
+                    <option value="n3">notation3: .n3 text/n3</option>
+                  </select>
+                </div>
+                <br/>
+                <hr/>
+                <h3>Choose an option for a running pre-validation Graph Inferencing routine</h3>
                 <input type="radio" id="inference_input_none" value="none" v-model="inferenceDataOption">
                 <label for="inference_input_none">No Inferencing</label>
                 <br>
@@ -244,8 +286,12 @@
           for (var i=0, l=resultTriples.length; i<l; i++) {
               var resultTriple = resultTriples[i];
               var s = resultTriple[0], p = resultTriple[1], o = getObjectVal(resultTriple[2]);
-              if (typeof o === "string" && o.substr(0,2) === "_:") {
-                o = "Unlabelled embedded blank node."
+              if (typeof o === "string") {
+                o = o.replace(/</g, "&lt;");
+                o = o.replace(/>/g, "&gt;");
+                if (o.substr(0,2) === "_:") {
+                  o = "Unlabelled embedded blank node."
+                }
               }
               if (p === SHACL_NS('focusNode')) {
                   resultString += "<strong>Focus Node</strong>:&nbsp;"+o+"\n";
@@ -292,10 +338,16 @@
                     shaclGraphTextArea: "",
                     shaclGraphLink: "",
                     shaclGraphUploadFile: "",
+                    extraGraphSource: "none",
+                    extraGraphFormat: "turtle",
+                    extraGraphTextArea: "",
+                    extraGraphLink: "",
+                    extraGraphUploadFile: "",
                     inferenceDataOption: "none",
                     enableMetashacl: false,
                     showingShaclSourceHelp: false,
                     showingDataSourceHelp: false,
+                    showingExtraSourceHelp: false,
                     showingResults: false,
                     showingError: false,
                     errorName: "",
@@ -310,6 +362,9 @@
                     },
                     showDataSourceHelp: function () {
                         this.showingDataSourceHelp = !this.showingDataSourceHelp;
+                    },
+                    showExtraSourceHelp: function () {
+                        this.showingExtraSourceHelp = !this.showingExtraSourceHelp;
                     },
                     dataGraphFileChanged: function(ev) {
                         var files = ev.target.files;
@@ -326,6 +381,15 @@
                             this.shaclGraphUploadFile = files[0];
                         } else {
                             this.shaclGraphUploadFile = null;
+                        }
+                        console.debug(ev);
+                    },
+                    extraGraphFileChanged: function(ev) {
+                        var files = ev.target.files;
+                        if (files.length > 0) {
+                            this.extraGraphUploadFile = files[0];
+                        } else {
+                            this.extraGraphUploadFile = null;
                         }
                         console.debug(ev);
                     },
@@ -358,10 +422,24 @@
                             alert("Please select a SHACL Graph Source type.");
                             return;
                         }
+                        if ((!this.extraGraphSource) || (this.extraGraphSource === 'none')) {
+                            payload.set('extraSource', null);
+                        } else if (this.extraGraphSource === 'text') {
+                            payload.set('extraSource', this.extraGraphTextArea);
+                        } else if (this.extraGraphSource === 'link') {
+                            payload.set('extraSource', this.extraGraphLink);
+                        } else if (this.extraGraphSource === 'file') {
+                            payload.set('extraSource', this.extraGraphUploadFile);
+                        } else {
+                            alert("Please select a Extra Ontology Graph Source type.");
+                            return;
+                        }
                         payload.set('dataGraphSource', this.dataGraphSource);
                         payload.set('shaclGraphSource', this.shaclGraphSource);
+                        payload.set('extraGraphSource', this.extraGraphSource);
                         payload.set('dataGraphFormat', this.dataGraphFormat);
                         payload.set('shaclGraphFormat', this.shaclGraphFormat);
+                        payload.set('extraGraphFormat', this.extraGraphFormat);
                         payload.set('inferenceDataOption', this.inferenceDataOption);
                         payload.set('enableMetashacl', this.enableMetashacl);
                         var self = this;

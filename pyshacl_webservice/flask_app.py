@@ -71,10 +71,15 @@ def validate():
         shacl_graph_source = form['shaclGraphSource']
     except (AttributeError, KeyError, AssertionError) as e:
         raise e
+    try:
+        extra_graph_source = form['extraGraphSource']
+    except (AttributeError, KeyError, AssertionError) as e:
+        raise e
+
 
     assert data_graph_source in {'text', 'file', 'link'}, "Unsupported Data Graph source."
     assert shacl_graph_source in {'text', 'file', 'link', 'none', None}, "Unsupported SHACL Graph source."
-
+    assert extra_graph_source in {'text', 'file', 'link', 'none', None}, "Unsupported Extra Graph source."
     try:
         data_graph_format = form['dataGraphFormat']
         assert data_graph_format, "dataGraphFormat not found in form data."
@@ -137,6 +142,31 @@ def validate():
                 assert shacl_source, 'shaclSource not found in the form data.'
             except (AttributeError, KeyError, AssertionError) as e:
                 raise e
+    if (not extra_graph_source) or extra_graph_source == 'none':
+        extra_source = None
+        extra_graph_format = None
+    else:
+        try:
+            extra_graph_format = form['extraGraphFormat']
+            assert extra_graph_format, "extraGraphFormat not found in form data."
+        except (AssertionError, KeyError, AssertionError) as e:
+            raise e
+        if extra_graph_format == 'file':
+            try:
+                extra_source = request.files['extraSource']
+                assert extra_source
+                extra_source = extra_source.read()
+            except (AttributeError, KeyError, AssertionError):
+                raise FileNotFoundError('Extra Ontology Source File not found')
+            if isinstance(extra_source, bytes):
+                # Assuming UTF-8 here, this might not always be right.
+                extra_source = extra_source.decode('utf-8')
+        else:
+            try:
+                extra_source = form['extraSource']
+                assert extra_source, 'extraSource not found in the form data.'
+            except (AttributeError, KeyError, AssertionError) as e:
+                raise e
     client_session = None
     if data_graph_source == 'link':
         assert (data_source[:5].lower() == 'http:' or data_source[:6].lower() == 'https:'),\
@@ -162,10 +192,25 @@ def validate():
             raise InvalidURLException("SHACL URL Not available.", 406)
         body = response.text
         shacl_source = body
+    if extra_graph_source == 'link':
+        assert (extra_source[:5].lower() == 'http:' or extra_source[:6].lower() == 'https:'),\
+            "The Extra Ontology Graph source link must start with http: or https:"
+        client_session = client_session or Session()
+        try:
+            response = client_session.get(extra_source, headers={'Accept': 'text/turtle'})
+            if not (200 <= response.status_code < 300):
+                raise InvalidURLException("Extra Ontology URL got code {}".format(response.status_code), 406)
+        except (ConnectionError, ConnectTimeout):
+            raise InvalidURLException("Extra Ontology URL Not available.", 406)
+        body = response.text
+        extra_source = body
     try:
         r = functions.run_validate(data_source, data_graph_format, shacl_source,
-                                   shacl_graph_format, inference_data_option,
-                                   enable_metashacl)
+                                   shacl_graph_format,
+                                   ont_graph=extra_source,
+                                   ont_graph_format=extra_graph_format,
+                                   inference=inference_data_option,
+                                   enable_metashacl=enable_metashacl)
     except Exception as e:
         raise e
     conforms, report = r

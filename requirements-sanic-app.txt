@@ -1,6 +1,9 @@
 # To install:
 #$ pip3 install --upgrade --process-dependency-links -r ./requirements-sanic-app.txt
-sanic>=0.8.1
-sanic-cors>=0.9.7
-aiohttp>=2.3.0,<=3.2.1
-sanic-jinja2>=0.7.0
+sanic>=20.6.3
+sanic-cors>=0.10.0.post3
+aiohttp>=3.6.2,<=4.0.0
+sanic-plugins-framework>=0.6.3,<0.7
+sanic-jinja2-spf>=0.7.5
+# aiohttp 3.6.2 requires multidict>=4.5.0 see https://github.com/aio-libs/aiohttp/issues/4053
+multidict>=4.5.0,<5.0

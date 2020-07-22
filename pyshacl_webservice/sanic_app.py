@@ -82,9 +82,16 @@ async def validate(request):
         shacl_graph_source = shacl_graph_source[0]
     except (AttributeError, KeyError, AssertionError) as e:
         raise e
+    try:
+        extra_graph_source = form['extraGraphSource']
+        assert len(extra_graph_source) > 0, "extraGraphSource not found in form data."
+        extra_graph_source = extra_graph_source[0]
+    except (AttributeError, KeyError, AssertionError) as e:
+        raise e
 
     assert data_graph_source in {'text', 'file', 'link'}, "Unsupported Data Graph source."
     assert shacl_graph_source in {'text', 'file', 'link', 'none', None}, "Unsupported SHACL Graph source."
+    assert extra_graph_source in {'text', 'file', 'link', 'none', None}, "Unsupported Extra Graph source."
 
     try:
         data_graph_format = form['dataGraphFormat']
@@ -154,6 +161,33 @@ async def validate(request):
                 shacl_source = shacl_source[0]
             except (AttributeError, KeyError, AssertionError) as e:
                 raise e
+    if (not extra_graph_source) or extra_graph_source == 'none':
+        extra_source = None
+        extra_graph_format = None
+    else:
+        try:
+            extra_graph_format = form['extraGraphFormat']
+            assert len(extra_graph_format) > 0, "extraGraphFormat not found in form data."
+            extra_graph_format = extra_graph_format[0]
+        except (AssertionError, KeyError, AssertionError) as e:
+            raise e
+        if extra_graph_format == 'file':
+            try:
+                extra_source = request.files['extraSource']
+                assert len(extra_source) > 0
+                extra_source = extra_source[0].body
+            except (AttributeError, KeyError, AssertionError):
+                raise FileNotFoundError('Extra Ontology Source File not found')
+            if isinstance(extra_source, bytes):
+                # Assuming UTF-8 here, this might not always be right.
+                extra_source = extra_source.decode('utf-8')
+        else:
+            try:
+                extra_source = form['extraSource']
+                assert len(extra_source) > 0, 'extraSource not found in the form data.'
+                extra_source = extra_source[0]
+            except (AttributeError, KeyError, AssertionError) as e:
+                raise e
     async_futures = set()
     client_session = None
     if data_graph_source == 'link':
@@ -186,16 +220,33 @@ async def validate(request):
         get_future = asyncio.ensure_future(get_task._coro)
         get_future = add_success_callback(get_future, shacl_graph_callback)
         async_futures.add(get_future)
+    if extra_graph_source == 'link':
+        async def extra_graph_callback(response):
+            nonlocal extra_source
+            if not (200 <= response.status < 300):
+                raise InvalidURLException("Extra Graph URL got code {}".format(response.status), 406)
+            body = await response.text()
+            extra_source = body
+
+        assert (extra_source[:5].lower() == 'http:' or extra_source[:6].lower() == 'https:'),\
+            "The Extra Ontology Graph source link must start with http: or https:"
+        client_session = client_session or ClientSession(headers={'Accept': 'text/turtle'})
+        get_task = client_session.get(extra_source)
+        get_future = asyncio.ensure_future(get_task._coro)
+        get_future = add_success_callback(get_future, extra_graph_callback)
+        async_futures.add(get_future)
     if len(async_futures) > 0:
         _done = await asyncio.gather(*async_futures, return_exceptions=False)
         print(_done)
     try:
         r = functions.run_validate(data_source, data_graph_format, shacl_source,
                                    shacl_graph_format,
+                                   ont_graph=extra_source,
+                                   ont_graph_format=extra_graph_format,
                                    inference=inference_data_option,
                                    enable_metashacl=enable_metashacl)
-    except Exception as e:
-        raise e
+    except Exception:
+        raise
     conforms, report = r
     return HTTPResponse(None, status=200,
                         headers={'Content-Type': 'application/ld+json'},

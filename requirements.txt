@@ -1,3 +1,5 @@
 # To install:
 #$ pip3 install --upgrade --no-binary :all: --process-dependency-links -r ./requirements.txt
-pyshacl>=0.9.7
+rdflib>=5.0.0,<6.0
+rdflib-jsonld>=0.5.0,<0.6
+pyshacl>=0.12.1.post1

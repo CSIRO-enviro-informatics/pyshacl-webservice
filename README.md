@@ -10,5 +10,5 @@ Lead Developer:
 **Ashley Sommer**  
 *Software Engineer*  
 CSIRO Land & Water, Environmental Informatics Group  
-Brisbane, Qld, Australia  
+Brisbane, QLD, Australia  
 <Ashley.Sommer@csiro.au>  

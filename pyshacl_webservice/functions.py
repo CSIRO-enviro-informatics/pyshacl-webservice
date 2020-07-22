@@ -4,17 +4,20 @@ from pyshacl.errors import ReportableRuntimeError, ValidationFailure, Constraint
 import json
 
 
-def run_validate(data_graph_text, target_graph_format=None,
+def run_validate(data_graph_text, data_graph_format=None,
                  shacl_graph_text=None, shacl_graph_format=None,
-                 inference=None, enable_metashacl=False, load_json=False):
+                 ont_graph=None, ont_graph_format=None,
+                 inference=None, enable_metashacl=False, advanced=True,
+                 load_json=False):
 
     try:
         r = validate(data_graph_text, shacl_graph=shacl_graph_text,
                      inference=inference,
-                     target_graph_format=target_graph_format,
+                     data_graph_format=data_graph_format,
                      shacl_graph_format=shacl_graph_format,
+                     ont_graph=ont_graph, ont_graph_format=ont_graph_format,
                      serialize_report_graph='json-ld',
-                     meta_shacl=enable_metashacl)
+                     meta_shacl=enable_metashacl, advanced=advanced)
         conforms, output, text = r
     except ValidationFailure as vf:
         conforms = False
